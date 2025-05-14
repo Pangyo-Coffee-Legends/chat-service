@@ -44,4 +44,8 @@ public class MessageReadStatus {
     public void prePersist() {
         this.createdAt = LocalDateTime.now();
     }
+
+    public void updateIsRead(boolean isRead) {
+        this.isRead = isRead;
+    }
 }

@@ -30,7 +30,7 @@ public class StompController {
         // 메시지를 받으면 DB에 저장
         chatService.saveMessage(roomId, chatMessageDto);
 
-        // 채팅방으로 보내는 코드
+        // 채팅방으로 메시지를 보내는 코드
         messageTemplate.convertAndSend("/topic/" + roomId, chatMessageDto);
     }
 }

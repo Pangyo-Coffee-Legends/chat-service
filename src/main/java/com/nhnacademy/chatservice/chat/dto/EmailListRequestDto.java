@@ -5,13 +5,12 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ChatRoomListResDto {
-    private Long roomId;
-    private String roomName;
-    private int participantCount;
-    private Long unreadCount;
+public class EmailListRequestDto {
+    private List<String> emails;
 }

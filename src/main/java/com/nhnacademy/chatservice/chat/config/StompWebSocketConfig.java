@@ -27,5 +27,7 @@ public class StompWebSocketConfig implements WebSocketMessageBrokerConfigurer {
         registry.setApplicationDestinationPrefixes("/publish");
         // 서버가 메시지를 클라이언트에게 발행할 때 사용하는 경로 prefix
         registry.enableSimpleBroker("/topic");
+
+//        registry.setUserDestinationPrefix("/user");
     }
 }

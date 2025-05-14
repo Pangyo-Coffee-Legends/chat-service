@@ -1,8 +1,14 @@
 package com.nhnacademy.chatservice.chat.controller;
 
+import com.nhnacademy.chatservice.chat.dto.ChatMessageDto;
+import com.nhnacademy.chatservice.chat.dto.EmailListRequestDto;
 import com.nhnacademy.chatservice.chat.service.ChatService;
+import com.nhnacademy.chatservice.member.domain.Member;
+import com.nhnacademy.chatservice.member.dto.MemberDto;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/chat")
@@ -28,10 +34,53 @@ public class ChatController {
         return ResponseEntity.ok(chatService.getChatRoomList(userEmail));
     }
 
-    // 그룹 채팅방에 참여하는 api
+    // 채팅방에 없는 회원 조회
+    @GetMapping("/room/{roomId}/nonmember/list")
+    public ResponseEntity<?> getNonChatRoomMembers(@RequestHeader("X-USER") String userEmail, @PathVariable Long roomId) {
+        List<MemberDto> members = chatService.getNonChatRoomMembers(roomId);
+        return ResponseEntity.ok(members);
+    }
+
+    // 채팅방에 참여하는 api
     @PostMapping("/room/group/{roomId}/join")
     public ResponseEntity<?> joinGroupRoom(@RequestHeader("X-USER") String userEmail, @PathVariable Long roomId) {
         chatService.addParticipantToGroupChat(roomId, userEmail);
+        return ResponseEntity.ok().build();
+    }
+
+    // 채팅방에 초대하는 api
+    @PostMapping("/room/group/invite-multiple/{roomId}/join")
+    public ResponseEntity<?> inviteGroupRoom(@RequestBody EmailListRequestDto emailListRequestDto, @PathVariable Long roomId) {
+        System.out.println("안녕" + emailListRequestDto);
+        chatService.addParticipantsToGroupChat(emailListRequestDto, roomId);
+        return ResponseEntity.ok().build();
+    }
+
+//    // 여러명을 채팅방에 초대하는 api
+//    @PostMapping("/room/group/invite-multiple/{roomId}/join")
+//    public ResponseEntity<?> inviteMembersGroupRoom(@RequestHeader("X-USER") String userEmail, @PathVariable Long roomId) {
+//        chatService.addParticipantToGroupChat(roomId, userEmail);
+//        return ResponseEntity.ok().build();
+//    }
+
+    // 이전 메시지 조회
+    @GetMapping("/history/{roomId}")
+    public ResponseEntity<?> getHistory(@RequestHeader("X-USER") String userEmail, @PathVariable Long roomId) {
+        List<ChatMessageDto> chatMessageDtos = chatService.getHistory(userEmail, roomId);
+        return ResponseEntity.ok(chatMessageDtos);
+    }
+
+    // 채팅 메시지 읽음 처리
+    @PostMapping("/room/{roomId}/read")
+    public ResponseEntity<?> messageRead(@RequestHeader("X-USER") String userEmail, @PathVariable Long roomId) {
+        chatService.messageRead(roomId, userEmail);
+        return ResponseEntity.ok().build();
+    }
+
+    // 채팅방 나가기 처리
+    @DeleteMapping("/room/{roomId}/leave")
+    public ResponseEntity<?> leaveChatRoom(@RequestHeader("X-USER") String userEmail, @PathVariable Long roomId) {
+        chatService.leaveChatRoom(roomId, userEmail);
         return ResponseEntity.ok().build();
     }
 }
