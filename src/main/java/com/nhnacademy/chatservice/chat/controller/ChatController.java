@@ -63,24 +63,30 @@ public class ChatController {
 //        return ResponseEntity.ok().build();
 //    }
 
-    // 이전 메시지 조회
+    // 특정 채팅방의 이전 메시지 조회
     @GetMapping("/history/{roomId}")
     public ResponseEntity<?> getHistory(@RequestHeader("X-USER") String userEmail, @PathVariable Long roomId) {
         List<ChatMessageDto> chatMessageDtos = chatService.getHistory(userEmail, roomId);
         return ResponseEntity.ok(chatMessageDtos);
     }
 
-    // 채팅 메시지 읽음 처리
+    // 특정 채팅방의 채팅 메시지 읽음 처리
     @PostMapping("/room/{roomId}/read")
     public ResponseEntity<?> messageRead(@RequestHeader("X-USER") String userEmail, @PathVariable Long roomId) {
         chatService.messageRead(roomId, userEmail);
         return ResponseEntity.ok().build();
     }
 
-    // 채팅방 나가기 처리
+    // 특정 채팅방 나가기 처리
     @DeleteMapping("/room/{roomId}/leave")
     public ResponseEntity<?> leaveChatRoom(@RequestHeader("X-USER") String userEmail, @PathVariable Long roomId) {
         chatService.leaveChatRoom(roomId, userEmail);
         return ResponseEntity.ok().build();
+    }
+
+    // 내가 읽지 않은 메시지의 총 개수
+    @GetMapping("/unread/count")
+    public ResponseEntity<?> getUnreadCount(@RequestHeader("X-USER") String userEmail) {
+        return ResponseEntity.ok(chatService.getUnreadCount(userEmail));
     }
 }

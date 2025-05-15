@@ -1,5 +1,6 @@
 package com.nhnacademy.chatservice.chat.service.impl;
 
+import com.nhnacademy.chatservice.chat.config.ChatSessionTracker;
 import com.nhnacademy.chatservice.chat.domain.ChatMessage;
 import com.nhnacademy.chatservice.chat.domain.ChatParticipant;
 import com.nhnacademy.chatservice.chat.domain.ChatRoom;
@@ -37,13 +38,16 @@ public class ChatServiceImpl implements ChatService {
     private final MessageReadStatusRepository readStatusRepository;
     private final MemberRepository memberRepository;
 
-    public ChatServiceImpl(SimpMessageSendingOperations messageTemplate, ChatRoomRepository chatRoomRepository, ChatParticipantRepository chatParticipantRepository, ChatMessageRepository chatMessageRepository, MessageReadStatusRepository readStatusRepository, MemberRepository memberRepository) {
+    private final ChatSessionTracker chatSessionTracker;
+
+    public ChatServiceImpl(SimpMessageSendingOperations messageTemplate, ChatRoomRepository chatRoomRepository, ChatParticipantRepository chatParticipantRepository, ChatMessageRepository chatMessageRepository, MessageReadStatusRepository readStatusRepository, MemberRepository memberRepository, ChatSessionTracker chatSessionTracker) {
         this.messageTemplate = messageTemplate;
         this.chatRoomRepository = chatRoomRepository;
         this.chatParticipantRepository = chatParticipantRepository;
         this.chatMessageRepository = chatMessageRepository;
         this.readStatusRepository = readStatusRepository;
         this.memberRepository = memberRepository;
+        this.chatSessionTracker = chatSessionTracker;
     }
 
     // 메시지 저장
@@ -68,16 +72,64 @@ public class ChatServiceImpl implements ChatService {
         // 채팅방에 존재하는 참여자들의 메시지 읽음 테이블에 읽음 여부를 저장
         List<ChatParticipant> chatParticipants = chatParticipantRepository.findByChatRoom(chatRoom);
 
-        for (ChatParticipant chatParticipant : chatParticipants) {
-            MessageReadStatus messageReadStatus = MessageReadStatus.builder()
+//        for (ChatParticipant chatParticipant : chatParticipants) {
+//            MessageReadStatus messageReadStatus = MessageReadStatus.builder()
+//                    .chatRoom(chatRoom)
+//                    .member(chatParticipant.getMember())
+//                    .chatMessage(chatMessage)
+//                    .isRead((chatParticipant.getMember().equals(sender)))
+//                    .build();
+//
+//            readStatusRepository.save(messageReadStatus);
+//
+//            Member member = chatParticipant.getMember();
+//
+//            // 메시지 보낸 사람은 제외 (또는 다른 로직) && 현재 채팅방에 접속해있는 사람은 제외
+//            if (!member.getMbEmail().equals(chatMessageDto.getSender())) {
+//                Long unreadCountForMember = readStatusRepository.countByMemberAndIsReadFalse(member);
+//
+//                sendUnreadCountUpdate(member.getMbEmail(), unreadCountForMember);
+//            }
+//        }
+
+        for (ChatParticipant participant : chatParticipants) {
+            Member member = participant.getMember();
+
+            boolean isInRoom = chatSessionTracker.isUserInRoom(member.getMbEmail(), roomId);
+
+            MessageReadStatus status = MessageReadStatus.builder()
                     .chatRoom(chatRoom)
-                    .member(chatParticipant.getMember())
+                    .member(member)
                     .chatMessage(chatMessage)
-                    .isRead((chatParticipant.getMember().equals(sender)))
+                    .isRead(member.equals(sender) || isInRoom)
                     .build();
 
-            readStatusRepository.save(messageReadStatus);
+            readStatusRepository.save(status);
+
+            if (!member.equals(sender) && !isInRoom) {
+                Long unreadCount = readStatusRepository.countByMemberAndIsReadFalse(member);
+                sendUnreadCountUpdate(member.getMbEmail(), unreadCount);
+            }
         }
+    }
+
+    public void sendUnreadCountUpdate(String userEmail, Long unreadCount) {
+        // DTO를 사용하는 것이 더 좋습니다.
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("userEmail", userEmail);
+        payload.put("unreadCount", unreadCount);
+
+        // 공용 토픽으로 userEmail과 함께 안 읽은 메시지 수 전송
+        messageTemplate.convertAndSend("/topic/unread-count-updates", payload);
+    }
+
+    // 내가 읽지 않은 메시지의 개수
+    @Override
+    public Long getUnreadCount(String userEmail) {
+        Member member = memberRepository.findByMbEmail(userEmail).orElseThrow(
+                () -> new EntityNotFoundException("회원이 존재하지 않습니다."));
+
+        return readStatusRepository.countByMemberAndIsReadFalse(member);
     }
 
 
@@ -113,6 +165,7 @@ public class ChatServiceImpl implements ChatService {
 
         for(ChatRoom chatRoom : chatRooms) {
             Long count = readStatusRepository.countByChatRoomAndMemberAndIsReadFalse(chatRoom, member);
+
             int participantCount = chatParticipantRepository.countByChatRoom(chatRoom);
             ChatRoomListResDto dto = ChatRoomListResDto.builder()
                     .roomId(chatRoom.getId())
@@ -159,12 +212,13 @@ public class ChatServiceImpl implements ChatService {
 
         // 참여하려고 하는 멤버가 참여자가 아닌 경우 새로 등록해주는 로직
         if (!chatParticipant.isPresent()) {
-            // 퇴장 알림 메시지 생성 및 발송
-            String inviteMessageContent = userEmail + " 님을 채팅방에 나갔습니다."; // 또는 member.getName() 사용
-            ChatMessageDto inviteNotification = ChatMessageDto.builder()
-                    .sender("system") // 또는 나간 사용자 이메일/이름
-                    .content(inviteMessageContent)
-                    .build();
+//            // 퇴장 알림 메시지 생성 및 발송
+//            String inviteMessageContent = userEmail + " 님을 채팅방에 나갔습니다."; // 또는 member.getName() 사용
+//
+//            ChatMessageDto inviteNotification = ChatMessageDto.builder()
+//                    .sender("system") // 또는 나간 사용자 이메일/이름
+//                    .content(inviteMessageContent)
+//                    .build();
 
             addParticipant(chatRoom, member);
         }
@@ -292,6 +346,7 @@ public class ChatServiceImpl implements ChatService {
                 .orElseThrow(() -> new EntityNotFoundException("member cannot be found."));
 
         List<MessageReadStatus> readStatuses = readStatusRepository.findByChatRoomAndMember(chatRoom, member);
+
         for(MessageReadStatus r : readStatuses) {
             r.updateIsRead(true);
         }
@@ -325,4 +380,6 @@ public class ChatServiceImpl implements ChatService {
             chatRoomRepository.delete(chatRoom);
         }
     }
+
+
 }

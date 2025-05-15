@@ -10,6 +10,8 @@ import java.util.List;
 
 @Repository
 public interface MessageReadStatusRepository extends JpaRepository<MessageReadStatus, Long> {
+    Long countByMemberAndIsReadFalse(Member member);
+
     Long countByChatRoomAndMemberAndIsReadFalse(ChatRoom chatRoom, Member member);
 
     List<MessageReadStatus> findByChatRoomAndMember(ChatRoom chatRoom, Member member);

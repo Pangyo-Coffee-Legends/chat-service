@@ -17,19 +17,33 @@ import java.util.concurrent.ConcurrentHashMap;
 public class stompEventListener {
     private final Set<String> sessions = ConcurrentHashMap.newKeySet();
 
+    private final ChatSessionTracker chatSessionTracker;
+
+    public stompEventListener(ChatSessionTracker chatSessionTracker) {
+        this.chatSessionTracker = chatSessionTracker;
+    }
+
     @EventListener
     public void connectHandle(SessionConnectEvent event) {
         StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
-        sessions.add(headerAccessor.getSessionId());
-        log.info("Connected : " + headerAccessor.getSessionId());
-        log.info("total sessions : " + sessions.size());
+
+        String userEmail = headerAccessor.getFirstNativeHeader("X-USER");
+        String roomIdHeader = headerAccessor.getFirstNativeHeader("roomId");
+
+        if (userEmail != null && roomIdHeader != null) {
+            Long roomId = Long.parseLong(roomIdHeader);
+            String sessionId = headerAccessor.getSessionId();
+            chatSessionTracker.registerSession(sessionId, userEmail, roomId);
+            log.info("CONNECT: {} joined room {}", userEmail, roomId);
+        }
+
     }
 
     @EventListener
     public void disconnectHandle(SessionDisconnectEvent event) {
         StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
-        sessions.remove(headerAccessor.getSessionId());
-        log.info("disConnected : " + headerAccessor.getSessionId());
-        log.info("total sessions : " + sessions.size());
+        String sessionId = headerAccessor.getSessionId();
+        chatSessionTracker.unregisterSession(sessionId);
+        log.info("DISCONNECT: session {} disconnected", sessionId);
     }
 }

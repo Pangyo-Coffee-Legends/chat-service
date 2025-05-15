@@ -33,4 +33,6 @@ public interface ChatService {
     void addParticipantsToGroupChat(EmailListRequestDto emailListRequestDto, Long roomId);
 
     List<MemberDto> getNonChatRoomMembers(Long roomId);
+
+    Long getUnreadCount(String email);
 }
