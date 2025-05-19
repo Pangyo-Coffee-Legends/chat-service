@@ -1,5 +1,6 @@
 package com.nhnacademy.chatservice.chat.service;
 
+import com.nhnacademy.chatservice.chat.domain.ChatMessage;
 import com.nhnacademy.chatservice.chat.domain.ChatRoom;
 import com.nhnacademy.chatservice.chat.dto.ChatMessageDto;
 import com.nhnacademy.chatservice.chat.dto.ChatRoomListResDto;
@@ -12,7 +13,7 @@ import java.util.List;
 
 public interface ChatService {
 
-    void saveMessage(Long roomId, ChatMessageDto chatMessageDto);
+    ChatMessage saveMessage(Long roomId, ChatMessageDto chatMessageDto);
 
     void createGroupRoom(String userEmail, String roomName);
 
@@ -35,4 +36,6 @@ public interface ChatService {
     List<MemberDto> getNonChatRoomMembers(Long roomId);
 
     Long getUnreadCount(String email);
+
+    void sendUnreadCountUpdate(Long roomId);
 }

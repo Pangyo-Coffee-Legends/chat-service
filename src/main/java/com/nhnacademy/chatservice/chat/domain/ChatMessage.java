@@ -2,10 +2,7 @@ package com.nhnacademy.chatservice.chat.domain;
 
 import com.nhnacademy.chatservice.member.domain.Member;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.Comment;
 
 import java.time.LocalDateTime;

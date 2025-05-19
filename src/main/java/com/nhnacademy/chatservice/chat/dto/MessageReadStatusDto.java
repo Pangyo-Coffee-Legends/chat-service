@@ -5,17 +5,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
-
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 @Builder
-public class ChatMessageDto {
-    private Long id;
-    private String sender;
-    private String content;
-    private LocalDateTime createdAt;
-//    private String type;
+public class MessageReadStatusDto {
+    private Long chatMessageId;
     private Long unreadCount;
 }

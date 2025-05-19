@@ -89,4 +89,11 @@ public class ChatController {
     public ResponseEntity<?> getUnreadCount(@RequestHeader("X-USER") String userEmail) {
         return ResponseEntity.ok(chatService.getUnreadCount(userEmail));
     }
+
+    // 채팅방 입장 시 채팅방에 존재하는 모든 사용자의 메시지 요소 중 하나인 unreadCount를 갱신
+    @GetMapping("/room/{roomId}/unreadUpdate")
+    public ResponseEntity<?> sendUnreadCountUpdate(@RequestHeader("X-USER") String userEmail, @PathVariable Long roomId) {
+        chatService.sendUnreadCountUpdate(roomId);
+        return ResponseEntity.ok().build();
+    }
 }

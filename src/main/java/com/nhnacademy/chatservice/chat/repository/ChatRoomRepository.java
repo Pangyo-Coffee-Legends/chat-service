@@ -12,6 +12,9 @@ import java.util.Optional;
 
 @Repository
 public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
+
+    Optional<ChatRoom> findById(Long chatRoomId);
+
     List<ChatRoom> findByIsGroupChat(String isGroupChat);
 
     @Query("SELECT cr FROM ChatRoom cr JOIN cr.chatParticipants cp JOIN cp.member m WHERE m.mbEmail = :email")

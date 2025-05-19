@@ -11,6 +11,8 @@ import java.util.List;
 
 @Repository
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
+
+
     List<ChatMessage> findByChatRoomId(Long chatRoomId);
 
     List<ChatMessage> findByChatRoomAndCreatedAtGreaterThanEqualOrderByCreatedAtAsc(ChatRoom chatRoom, LocalDateTime createdAt);
