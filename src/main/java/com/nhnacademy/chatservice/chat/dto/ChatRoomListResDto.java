@@ -14,4 +14,5 @@ public class ChatRoomListResDto {
     private String roomName;
     private int participantCount;
     private Long unreadCount;
+    private String email;
 }

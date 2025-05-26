@@ -56,13 +56,6 @@ public class ChatController {
         return ResponseEntity.ok().build();
     }
 
-//    // 여러명을 채팅방에 초대하는 api
-//    @PostMapping("/room/group/invite-multiple/{roomId}/join")
-//    public ResponseEntity<?> inviteMembersGroupRoom(@RequestHeader("X-USER") String userEmail, @PathVariable Long roomId) {
-//        chatService.addParticipantToGroupChat(roomId, userEmail);
-//        return ResponseEntity.ok().build();
-//    }
-
     // 특정 채팅방의 이전 메시지 조회
     @GetMapping("/history/{roomId}")
     public ResponseEntity<?> getHistory(@RequestHeader("X-USER") String userEmail, @PathVariable Long roomId) {

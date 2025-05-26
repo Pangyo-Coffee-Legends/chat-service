@@ -19,6 +19,8 @@ public interface ChatService {
 
     List<ChatRoomListResDto> getChatRoomList(String email);
 
+    void updateChatList(String email);
+
     void addParticipantToGroupChat(Long roomId, String userEmail);
 
     void addParticipant(ChatRoom room, Member member);

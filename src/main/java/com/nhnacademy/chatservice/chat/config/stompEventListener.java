@@ -30,11 +30,18 @@ public class stompEventListener {
         String userEmail = headerAccessor.getFirstNativeHeader("X-USER");
         String roomIdHeader = headerAccessor.getFirstNativeHeader("roomId");
 
+        if(userEmail != null) {
+            String sessionId = headerAccessor.getSessionId();
+            chatSessionTracker.chatListRegisterSession(sessionId, userEmail);
+            log.info("LIST CONNECT: {} joined list", userEmail);
+            log.info("LIST CONNECT: {}", chatSessionTracker.getChatListSessionIdToUserEmailMap().values());
+        }
+
         if (userEmail != null && roomIdHeader != null) {
             Long roomId = Long.parseLong(roomIdHeader);
             String sessionId = headerAccessor.getSessionId();
-            chatSessionTracker.registerSession(sessionId, userEmail, roomId);
-            log.info("CONNECT: {} joined room {}", userEmail, roomId);
+            chatSessionTracker.roomRegisterSession(sessionId, userEmail, roomId);
+            log.info("ROOM CONNECT: {} joined ROOM {}", userEmail, roomId);
         }
 
     }
@@ -42,8 +49,13 @@ public class stompEventListener {
     @EventListener
     public void disconnectHandle(SessionDisconnectEvent event) {
         StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
+
+        String userEmail = headerAccessor.getFirstNativeHeader("X-USER");
+
         String sessionId = headerAccessor.getSessionId();
-        chatSessionTracker.unregisterSession(sessionId);
-        log.info("DISCONNECT: session {} disconnected", sessionId);
+        chatSessionTracker.roomUnregisterSession(sessionId);
+        log.info("ROOM DISCONNECT: session {} disconnected {}", sessionId, userEmail);
+        chatSessionTracker.chatListUnregisterSession(sessionId);
+        log.info("LIST DISCONNECT: session {} disconnected {}", sessionId, userEmail);
     }
 }

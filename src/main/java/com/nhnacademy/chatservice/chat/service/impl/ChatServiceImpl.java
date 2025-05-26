@@ -94,6 +94,13 @@ public class ChatServiceImpl implements ChatService {
             }
         }
 
+        System.out.println(
+                chatSessionTracker.getChatListSessionIdToUserEmailMap().values() + "ㅎㅇ!!"
+        );
+
+        chatSessionTracker.getChatListSessionIdToUserEmailMap().values().forEach(
+                email -> updateChatList(email));
+
         return saved;
     }
 
@@ -162,6 +169,30 @@ public class ChatServiceImpl implements ChatService {
         return chatRoomList;
     }
 
+    @Override
+    public void updateChatList(String email) {
+        Member member = memberRepository.findByMbEmail(email).orElseThrow(() -> new EntityNotFoundException("회원이 존재하지 않습니다."));
+        List<ChatRoom> chatRooms = chatRoomRepository.findChatRoomsByMemberEmail(email);
+        List<ChatRoomListResDto> chatRoomList = new ArrayList<>();
+
+        for(ChatRoom chatRoom : chatRooms) {
+            Long count = readStatusRepository.countByChatRoomAndMemberAndIsReadFalse(chatRoom, member);
+
+            int participantCount = chatParticipantRepository.countByChatRoom(chatRoom);
+            ChatRoomListResDto dto = ChatRoomListResDto.builder()
+                    .roomId(chatRoom.getId())
+                    .roomName(chatRoom.getName())
+                    .participantCount(participantCount)
+                    .unreadCount(count)
+                    .email(email)
+                    .build();
+            chatRoomList.add(dto);
+        }
+
+        messageTemplate.convertAndSend("/topic/chat-list-updates", chatRoomList);
+
+    }
+
     // 해당 채팅방에 없는 멤버 조회
     public List<MemberDto> getNonChatRoomMembers(Long roomId) {
         ChatRoom chatRoom = chatRoomRepository.findById(roomId).orElseThrow(
@@ -204,6 +235,9 @@ public class ChatServiceImpl implements ChatService {
 //                    .build();
 
             addParticipant(chatRoom, member);
+
+            chatSessionTracker.getChatListSessionIdToUserEmailMap().values().forEach(
+                    email -> updateChatList(email));
         }
     }
 
@@ -231,6 +265,9 @@ public class ChatServiceImpl implements ChatService {
                 Map<String, String> reloadSignal = new HashMap<>();
                 reloadSignal.put("action", "reloadChatList"); // 클라이언트가 식별할 수 있는 액션 이름
                 reloadSignal.put("invitedUser", userEmail); // **핵심: 초대받은 사용자 이메일 포함**
+
+                chatSessionTracker.getChatListSessionIdToUserEmailMap().values().forEach(
+                        email -> updateChatList(email));
 
                 // 초대받은 사용자에게만 신호 발송
                 messageTemplate.convertAndSend(
@@ -309,10 +346,33 @@ public class ChatServiceImpl implements ChatService {
 
         List<ChatMessageDto> chatMessageDtos = new ArrayList<>();
 
-        for (ChatMessage chatMessage : chatMessages) {
+//        for (ChatMessage chatMessage : chatMessages) {
+//
+//            // 특정 채팅방의 특정 메시지의 unreadCount 의 개수를 가져오기
+//            Long unreadCount = readStatusRepository.countByChatRoomAndChatMessageAndIsReadFalse(chatRoom, chatMessage);
+//
+//            ChatMessageDto dto = ChatMessageDto.builder()
+//                    .id(chatMessage.getId())
+//                    .sender(chatMessage.getMember().getMbEmail())
+//                    .content(chatMessage.getContent())
+//                    .createdAt(chatMessage.getCreatedAt())
+//                    .unreadCount(unreadCount)
+//                    .build();
+//
+//            chatMessageDtos.add(dto);
+//        }
 
-            // 특정 채팅방의 특정 메시지의 unreadCount 의 개수를 가져오기
-            Long unreadCount = readStatusRepository.countByChatRoomAndChatMessageAndIsReadFalse(chatRoom, chatMessage);
+//         1. unreadCount를 한 번에 조회
+        Map<Long, Long> unreadCountMap = readStatusRepository.findUnreadCountByRoomId(roomId)
+                .stream()
+                .collect(Collectors.toMap(
+                        row -> ((Number)row.get("messageId")).longValue(),
+                        row -> ((Number)row.get("unreadCount")).longValue()
+                ));
+
+        for (ChatMessage chatMessage : chatMessages) {
+            // 2. 메시지 리스트를 순회하며 unreadCount 매핑
+            Long unreadCount = unreadCountMap.getOrDefault(chatMessage.getId(), 0L);
 
             ChatMessageDto dto = ChatMessageDto.builder()
                     .id(chatMessage.getId())
@@ -370,9 +430,13 @@ public class ChatServiceImpl implements ChatService {
 
         messageTemplate.convertAndSend("/topic/" + roomId, leaveNotification);
 
+        chatSessionTracker.getChatListSessionIdToUserEmailMap().values().forEach(
+                email -> updateChatList(email));
+
         if(chatParticipants.isEmpty()) {
             chatRoomRepository.delete(chatRoom);
         }
+
     }
 
     @Override
@@ -399,4 +463,5 @@ public class ChatServiceImpl implements ChatService {
 
         messageTemplate.convertAndSend("/topic/" + roomId + "/unread", unreadCountMap);
     }
+
 }
