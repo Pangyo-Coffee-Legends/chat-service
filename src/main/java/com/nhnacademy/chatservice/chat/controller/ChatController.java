@@ -24,8 +24,8 @@ public class ChatController {
     // 그룹 채팅방 개설 / 참여자의 이메일은 헤더에서 받는걸로 변경
     @PostMapping("/room/group/create")
     public ResponseEntity<?> createGroupRoom(@RequestHeader("X-USER") String userEmail, @RequestParam String roomName) {
-        chatService.createGroupRoom(userEmail, roomName);
-        return ResponseEntity.ok().build();
+        Long roomId = chatService.createGroupRoom(userEmail, roomName);
+        return ResponseEntity.ok(roomId);
     }
 
     // 내가 속해 있는 채팅 목록 조회

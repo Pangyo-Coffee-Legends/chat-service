@@ -94,10 +94,6 @@ public class ChatServiceImpl implements ChatService {
             }
         }
 
-        System.out.println(
-                chatSessionTracker.getChatListSessionIdToUserEmailMap().values() + "ㅎㅇ!!"
-        );
-
         chatSessionTracker.getChatListSessionIdToUserEmailMap().values().forEach(
                 email -> updateChatList(email));
 
@@ -125,7 +121,7 @@ public class ChatServiceImpl implements ChatService {
 
     // 그룹 채팅방 개설 / 참여자의 이메일은 헤더에서 받는걸로 변경
     @Override
-    public void createGroupRoom(String userEmail, String roomName) {
+    public Long createGroupRoom(String userEmail, String roomName) {
         Member member= memberRepository.findByMbEmail(userEmail).orElseThrow(
                 () -> new EntityNotFoundException("회원이 존재하지 않습니다."));
 
@@ -135,7 +131,7 @@ public class ChatServiceImpl implements ChatService {
                 .isGroupChat("Y")
                 .build();
 
-        chatRoomRepository.save(chatRoom);
+        ChatRoom saved = chatRoomRepository.save(chatRoom);
 
         // 참여자 생성
         ChatParticipant chatParticipant = ChatParticipant.builder()
@@ -144,6 +140,8 @@ public class ChatServiceImpl implements ChatService {
                 .build();
 
         chatParticipantRepository.save(chatParticipant);
+
+        return saved.getId();
     }
 
     // 내가 속한 채팅방 조회

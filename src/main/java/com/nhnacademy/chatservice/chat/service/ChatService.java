@@ -15,7 +15,7 @@ public interface ChatService {
 
     ChatMessage saveMessage(Long roomId, ChatMessageDto chatMessageDto);
 
-    void createGroupRoom(String userEmail, String roomName);
+    Long createGroupRoom(String userEmail, String roomName);
 
     List<ChatRoomListResDto> getChatRoomList(String email);
 
