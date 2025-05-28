@@ -1,22 +1,18 @@
 package com.nhnacademy.chatservice.chat.service.impl;
 
 import com.nhnacademy.chatservice.chat.config.ChatSessionTracker;
-import com.nhnacademy.chatservice.chat.domain.ChatMessage;
-import com.nhnacademy.chatservice.chat.domain.ChatParticipant;
-import com.nhnacademy.chatservice.chat.domain.ChatRoom;
-import com.nhnacademy.chatservice.chat.domain.MessageReadStatus;
+import com.nhnacademy.chatservice.chat.domain.*;
 import com.nhnacademy.chatservice.chat.dto.ChatMessageDto;
 import com.nhnacademy.chatservice.chat.dto.ChatRoomListResDto;
 import com.nhnacademy.chatservice.chat.dto.EmailListRequestDto;
 import com.nhnacademy.chatservice.chat.dto.MessageReadStatusDto;
-import com.nhnacademy.chatservice.chat.repository.ChatMessageRepository;
-import com.nhnacademy.chatservice.chat.repository.ChatParticipantRepository;
-import com.nhnacademy.chatservice.chat.repository.ChatRoomRepository;
-import com.nhnacademy.chatservice.chat.repository.MessageReadStatusRepository;
+import com.nhnacademy.chatservice.chat.repository.*;
 import com.nhnacademy.chatservice.chat.service.ChatService;
 import com.nhnacademy.chatservice.member.domain.Member;
+import com.nhnacademy.chatservice.member.domain.Role;
 import com.nhnacademy.chatservice.member.dto.MemberDto;
 import com.nhnacademy.chatservice.member.repository.MemberRepository;
+import com.nhnacademy.chatservice.member.repository.RoleRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.stereotype.Service;
@@ -38,16 +34,21 @@ public class ChatServiceImpl implements ChatService {
     private final ChatMessageRepository chatMessageRepository;
     private final MessageReadStatusRepository readStatusRepository;
     private final MemberRepository memberRepository;
+    private final RoleRepository roleRepository;
+    private final NotificationMessageRepository notificationMessageRepository;
 
     private final ChatSessionTracker chatSessionTracker;
 
-    public ChatServiceImpl(SimpMessageSendingOperations messageTemplate, ChatRoomRepository chatRoomRepository, ChatParticipantRepository chatParticipantRepository, ChatMessageRepository chatMessageRepository, MessageReadStatusRepository readStatusRepository, MemberRepository memberRepository, ChatSessionTracker chatSessionTracker) {
+
+    public ChatServiceImpl(SimpMessageSendingOperations messageTemplate, ChatRoomRepository chatRoomRepository, ChatParticipantRepository chatParticipantRepository, ChatMessageRepository chatMessageRepository, MessageReadStatusRepository readStatusRepository, MemberRepository memberRepository, RoleRepository roleRepository, NotificationMessageRepository notificationMessageRepository, ChatSessionTracker chatSessionTracker) {
         this.messageTemplate = messageTemplate;
         this.chatRoomRepository = chatRoomRepository;
         this.chatParticipantRepository = chatParticipantRepository;
         this.chatMessageRepository = chatMessageRepository;
         this.readStatusRepository = readStatusRepository;
         this.memberRepository = memberRepository;
+        this.roleRepository = roleRepository;
+        this.notificationMessageRepository = notificationMessageRepository;
         this.chatSessionTracker = chatSessionTracker;
     }
 
@@ -460,6 +461,53 @@ public class ChatServiceImpl implements ChatService {
         }
 
         messageTemplate.convertAndSend("/topic/" + roomId + "/unread", unreadCountMap);
+    }
+
+    @Override
+    public List<Member> findByRole_RoleName(String roleName) {
+        List<Member> roleMembers = memberRepository.findByRole_RoleName(roleName);
+
+        if(!roleMembers.isEmpty()) {
+            return roleMembers;
+        }
+
+        return List.of();
+    }
+
+    @Override
+    public Role findByRoleName(String roleName) {
+        Role role = roleRepository.findByRoleName("ROLE_ADMIN").orElseThrow(() -> new EntityNotFoundException("role cannot be found."));
+
+        return role;
+    }
+
+    @Override
+    public void saveNotificationMessage(Member member, Role role ,String content) {
+
+        NotificationMessage notificationMessage = NotificationMessage.builder()
+                .member(member)
+                .role(role)
+                .content(content)
+                .build();
+
+        NotificationMessage savedNotificationMessage = notificationMessageRepository.save(notificationMessage);
+
+        Long count = notificationMessageRepository.countByMemberAndIsReadFalse(member);
+
+        if(chatSessionTracker.getChatListSessionIdToUserEmailMap().containsValue(member.getMbEmail())) {
+            // 현재 접속중인 사용자에게만 notification count 및 content 메시지 보냄
+            messageTemplate.convertAndSend("/topic/unread-notification-count-updates", count);
+            messageTemplate.convertAndSend("/topic/" + member.getMbEmail(), content);
+        }
+    }
+
+    @Override
+    public Long getNotificationUnreadCount(String email) {
+        Member member = memberRepository.findByMbEmail(email).orElseThrow(() -> new EntityNotFoundException("member cannot be found."));
+
+        Long count = notificationMessageRepository.countByMemberAndIsReadFalse(member);
+
+        return count;
     }
 
 }

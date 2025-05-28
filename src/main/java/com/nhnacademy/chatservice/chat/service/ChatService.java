@@ -6,6 +6,7 @@ import com.nhnacademy.chatservice.chat.dto.ChatMessageDto;
 import com.nhnacademy.chatservice.chat.dto.ChatRoomListResDto;
 import com.nhnacademy.chatservice.chat.dto.EmailListRequestDto;
 import com.nhnacademy.chatservice.member.domain.Member;
+import com.nhnacademy.chatservice.member.domain.Role;
 import com.nhnacademy.chatservice.member.dto.MemberDto;
 import org.springframework.web.bind.annotation.PathVariable;
 
@@ -40,4 +41,12 @@ public interface ChatService {
     Long getUnreadCount(String email);
 
     void sendUnreadCountUpdate(Long roomId);
+
+    List<Member> findByRole_RoleName(String roleName);
+
+    Role findByRoleName(String roleName);
+
+    void saveNotificationMessage(Member member, Role role ,String content);
+
+    Long getNotificationUnreadCount(String email);
 }

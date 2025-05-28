@@ -83,6 +83,12 @@ public class ChatController {
         return ResponseEntity.ok(chatService.getUnreadCount(userEmail));
     }
 
+    // 내가 읽지 않은 알림 메시지의 총 개수
+    @GetMapping("/notification/unread/count")
+    public ResponseEntity<?> getNotificationUnreadCount(@RequestHeader("X-USER") String userEmail) {
+        return ResponseEntity.ok(chatService.getNotificationUnreadCount(userEmail));
+    }
+
     // 채팅방 입장 시 채팅방에 존재하는 모든 사용자의 메시지 요소 중 하나인 unreadCount를 갱신
     @GetMapping("/room/{roomId}/unreadUpdate")
     public ResponseEntity<?> sendUnreadCountUpdate(@RequestHeader("X-USER") String userEmail, @PathVariable Long roomId) {
