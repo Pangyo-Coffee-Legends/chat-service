@@ -2,10 +2,7 @@ package com.nhnacademy.chatservice.chat.service.impl;
 
 import com.nhnacademy.chatservice.chat.config.ChatSessionTracker;
 import com.nhnacademy.chatservice.chat.domain.*;
-import com.nhnacademy.chatservice.chat.dto.ChatMessageDto;
-import com.nhnacademy.chatservice.chat.dto.ChatRoomListResDto;
-import com.nhnacademy.chatservice.chat.dto.EmailListRequestDto;
-import com.nhnacademy.chatservice.chat.dto.MessageReadStatusDto;
+import com.nhnacademy.chatservice.chat.dto.*;
 import com.nhnacademy.chatservice.chat.repository.*;
 import com.nhnacademy.chatservice.chat.service.ChatService;
 import com.nhnacademy.chatservice.member.domain.Member;
@@ -496,7 +493,7 @@ public class ChatServiceImpl implements ChatService {
 
         if(chatSessionTracker.getChatListSessionIdToUserEmailMap().containsValue(member.getMbEmail())) {
             // 현재 접속중인 사용자에게만 notification count 및 content 메시지 보냄
-            messageTemplate.convertAndSend("/topic/unread-notification-count-updates", count);
+            messageTemplate.convertAndSend("/topic/unread-notification-count-updates/" + member.getMbEmail(), count);
             messageTemplate.convertAndSend("/topic/" + member.getMbEmail(), content);
         }
     }
@@ -510,4 +507,34 @@ public class ChatServiceImpl implements ChatService {
         return count;
     }
 
+    @Override
+    public void readNotification(String email) {
+        Member member = memberRepository.findByMbEmail(email).orElseThrow(() -> new EntityNotFoundException("member cannot be found."));
+
+        List<NotificationMessage> notificationMessages = notificationMessageRepository.findByMemberAndIsReadFalse(member);
+
+        for(NotificationMessage notificationMessage : notificationMessages) {
+            System.out.println("notificationMessage = " + notificationMessage);
+            notificationMessage.updateIsRead(true);
+        }
+    }
+
+    @Override
+    public List<NotificationMessageDto> getHistoryNotification(String email) {
+        Member member = memberRepository.findByMbEmail(email).orElseThrow(() -> new EntityNotFoundException("member cannot be found."));
+
+        List<NotificationMessage> notificationMessages = notificationMessageRepository.findByMember(member);
+
+        List<NotificationMessageDto> notificationMessageDtos = new ArrayList<>();
+
+        for(NotificationMessage notificationMessage : notificationMessages) {
+            NotificationMessageDto notificationMessageDto = NotificationMessageDto.builder()
+                    .content(notificationMessage.getContent())
+                    .createdAt(notificationMessage.getCreatedAt())
+                    .build();
+            notificationMessageDtos.add(notificationMessageDto);
+        }
+
+        return notificationMessageDtos;
+    }
 }

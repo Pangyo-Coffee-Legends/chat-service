@@ -2,9 +2,11 @@ package com.nhnacademy.chatservice.chat.service;
 
 import com.nhnacademy.chatservice.chat.domain.ChatMessage;
 import com.nhnacademy.chatservice.chat.domain.ChatRoom;
+import com.nhnacademy.chatservice.chat.domain.NotificationMessage;
 import com.nhnacademy.chatservice.chat.dto.ChatMessageDto;
 import com.nhnacademy.chatservice.chat.dto.ChatRoomListResDto;
 import com.nhnacademy.chatservice.chat.dto.EmailListRequestDto;
+import com.nhnacademy.chatservice.chat.dto.NotificationMessageDto;
 import com.nhnacademy.chatservice.member.domain.Member;
 import com.nhnacademy.chatservice.member.domain.Role;
 import com.nhnacademy.chatservice.member.dto.MemberDto;
@@ -49,4 +51,8 @@ public interface ChatService {
     void saveNotificationMessage(Member member, Role role ,String content);
 
     Long getNotificationUnreadCount(String email);
+
+    void readNotification(String email);
+
+    List<NotificationMessageDto> getHistoryNotification(String email);
 }

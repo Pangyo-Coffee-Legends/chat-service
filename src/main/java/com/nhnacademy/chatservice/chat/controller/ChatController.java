@@ -95,4 +95,15 @@ public class ChatController {
         chatService.sendUnreadCountUpdate(roomId);
         return ResponseEntity.ok().build();
     }
+
+    @GetMapping("/notification/read")
+    public ResponseEntity<?> readNotification(@RequestHeader("X-USER") String userEmail) {
+        chatService.readNotification(userEmail);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/notification/history")
+    public ResponseEntity<?> getHistoryNotification(@RequestHeader("X-USER") String userEmail) {
+        return ResponseEntity.ok(chatService.getHistoryNotification(userEmail));
+    }
 }

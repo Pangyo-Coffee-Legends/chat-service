@@ -14,7 +14,6 @@ public class Receiver {
     private final SimpMessageSendingOperations messageTemplate;
     private final ChatService chatService;
 
-
     public Receiver(SimpMessageSendingOperations messageTemplate, ChatService chatService) {
         this.messageTemplate = messageTemplate;
         this.chatService = chatService;
