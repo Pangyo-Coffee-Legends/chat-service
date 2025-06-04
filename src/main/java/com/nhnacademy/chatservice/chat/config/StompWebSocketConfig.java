@@ -15,7 +15,7 @@ public class StompWebSocketConfig implements WebSocketMessageBrokerConfigurer {
         // endpoint url로 webSocket 요청이 들어오면, STOMP에서 클라이언트별, topic(=room)별로 구독정보 저장
         // endpoint는 최초 연결을 맺기 위한 url이다.
         registry.addEndpoint("ws/chat/connect")
-                .setAllowedOriginPatterns("http://localhost:10253")
+                .setAllowedOriginPatterns("https://aiot2.live","http://localhost:10253")
         // sockJs 라이브러리를 통한 요청을 허용하는 설정
                 .withSockJS();
     }
