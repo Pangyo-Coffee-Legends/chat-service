@@ -30,6 +30,14 @@
         <java.version>21</java.version>
         <spring-cloud.version>2024.0.1</spring-cloud.version>
     </properties>
+
+    <repositories>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+    </repositories>
+
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -41,7 +49,22 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+
     <dependencies>
+
+        <dependency>
+            <groupId>net.logstash.logback</groupId>
+            <artifactId>logstash-logback-encoder</artifactId>
+            <version>7.4</version>
+        </dependency>
+
+
+        <dependency>
+            <groupId>com.github.dusen0528</groupId>
+            <artifactId>trace-logger</artifactId>
+            <version>v1.1.9</version>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>
@@ -97,6 +120,7 @@
             <artifactId>spring-rabbit-test</artifactId>
             <scope>test</scope>
         </dependency>
+
     </dependencies>
 
     <build>

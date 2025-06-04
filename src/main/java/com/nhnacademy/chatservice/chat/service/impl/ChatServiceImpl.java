@@ -460,6 +460,8 @@ public class ChatServiceImpl implements ChatService {
         messageTemplate.convertAndSend("/topic/" + roomId + "/unread", unreadCountMap);
     }
 
+    // 알림 메시지 API
+
     @Override
     public List<Member> findByRole_RoleName(String roleName) {
         List<Member> roleMembers = memberRepository.findByRole_RoleName(roleName);
@@ -495,6 +497,7 @@ public class ChatServiceImpl implements ChatService {
             // 현재 접속중인 사용자에게만 notification count 및 content 메시지 보냄
             messageTemplate.convertAndSend("/topic/unread-notification-count-updates/" + member.getMbEmail(), count);
             messageTemplate.convertAndSend("/topic/" + member.getMbEmail(), content);
+            messageTemplate.convertAndSend("/topic/notification-message/" + member.getMbEmail(), content);
         }
     }
 

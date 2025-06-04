@@ -1,81 +1,73 @@
-#  워크플로우 이름입니다. GitHub Actions 탭에 표시되는 이름으로, 무엇을 하는 워크플로우인지 명확하게 표시합니다.
-name: Meeting-Room CI/CD
+# GitHub Actions 워크플로우의 이름 정의
+name: Chat-service CI/CD
 
-#  dev 브랜치에 push가 발생했을 때 이 워크플로우가 실행됩니다.
-#  on:은 GitHub 이벤트를 트리거로 지정하는 구문입니다.
-
-#  배포는 항상 최종적으로 main 브랜치에 반영된 이후에만 수행되어야 안전 그래서 pull_request는 주석처리
+# 워크플로우가 실행될 조건 설정
 on:
   push:
-    branches: [ "dev" ]
-#  pull_request:
-#   branches: [ "main" ] << 생략
+    branches: [ "main" ]  # main 브랜치에 push될 때만 실행
+  pull_request:
+    branches: [ "main" ]
 
-# jobs는 실행할 작업의 집합입니다. job의 이름, id값, 여기서는 하나의 Job만 정의되어 있고, 이름은 build입니다.
+# 실행할 작업들 정의
 jobs:
-  build:
-    # 이 Job은 GitHub에서 제공하는 최신 Ubuntu 환경(리눅스)에서 실행됩니다.
-    # Actions는 일종의 가상 머신에서 실행됩니다.
-    runs-on: ubuntu-latest
-    # steps는 해당 Job 안에서 실제 실행할 세부 단계들을 순서대로 정의합니다.
+  build:  # 작업 이름
+    runs-on: ubuntu-latest  # Ubuntu 최신 버전 가상머신에서 실행
+
+    # 작업 내 실행할 단계들
     steps:
-    # GitHub Actions에서 현재 레포지토리의 코드를 다운로드하여 가상 환경에서 사용할 수 있도록 해줍니다.
-    # actions/checkout은 GitHub이 공식 제공하는 액션입니다. @v4는 해당 GitHub Action의 버전(version)을 의미한다.
+      # GitHub 저장소에서 소스 코드를 체크아웃
       - uses: actions/checkout@v4
 
+      # Java 개발 환경 설정
       - name: Set up JDK 21
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v3  # Java 설정 액션 사용
         with:
-          java-version: '21'
-          distribution: 'temurin'
-          cache: maven
+          java-version: '21'         # Java 21 버전 사용
+          distribution: 'temurin'    # Eclipse Temurin 배포판 사용
+          cache: maven              # Maven 의존성 캐싱으로 빌드 속도 향상
 
+      # Maven을 사용하여 애플리케이션 빌드
       - name: Build with Maven
         run: mvn -B clean package --file pom.xml -DskipTests
+        # -B: 배치 모드 (비대화형)
+        # clean: 이전 빌드 결과물 삭제
+        # package: JAR 파일로 패키징
+        # --file pom.xml: pom.xml 파일 지정
+        # -DskipTests: 테스트 실행 건너뛰기
 
-      # 1. 서버에 디렉토리 생성 및 정리
+      # 1. 배포 서버에 디렉토리 생성 및 기존 파일 정리
       - name: Prepare server directory
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@master  # SSH 연결 액션 사용
         with:
-          host: ${{ secrets.SSH_IP }}
-          username: ${{ secrets.SSH_ID }}
-          key: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.SSH_PORT }}
-          script: |
-            mkdir -p ~/meeting-room/target
-            rm -f ~/meeting-room/target/*.jar
+          host: ${{ secrets.SSH_IP }}      # GitHub Secrets에서 서버 IP 가져오기
+          username: ${{ secrets.SSH_ID }}  # GitHub Secrets에서 SSH 사용자명 가져오기
+          key: ${{ secrets.SSH_KEY }}      # GitHub Secrets에서 SSH 개인키 가져오기
+          port: ${{ secrets.SSH_PORT }}    # GitHub Secrets에서 SSH 포트 가져오기
+          script: |                        # 서버에서 실행할 스크립트
+            mkdir -p ~/chat-service/target # chat-service/target 디렉토리 생성 (없으면)
+            rm -f ~/chat-service/target/*.jar  # 기존 JAR 파일들 삭제
 
-      # 2. JAR 파일 업로드
+      # 2. 빌드된 JAR 파일을 서버로 업로드
       - name: Upload JAR
-        uses: appleboy/scp-action@v0.1.7
+        uses: appleboy/scp-action@v0.1.7  # SCP 파일 전송 액션 사용
         with:
-          host: ${{ secrets.SSH_IP }}
-          username: ${{ secrets.SSH_ID }}
-          key: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.SSH_PORT }}
-          source: "target/*.jar"
-          target: "~/meeting-room/target"
-          strip_components: 1
-          overwrite: true
-      # 3. application.properties 파일 생성
-      - name: Create application.properties file
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.SSH_IP }}
-          username: ${{ secrets.SSH_ID }}
-          key: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.SSH_PORT }}
-          script: |
-            echo "${{ secrets.APPLICATION_PROPERTIES }}" > ~/meeting-room/application.properties
+          host: ${{ secrets.SSH_IP }}      # 서버 IP
+          username: ${{ secrets.SSH_ID }}  # SSH 사용자명
+          key: ${{ secrets.SSH_KEY }}      # SSH 개인키
+          port: ${{ secrets.SSH_PORT }}    # SSH 포트
+          source: "target/*.jar"           # 업로드할 파일 (빌드된 JAR 파일)
+          target: "~/chat-service/target"  # 서버의 목적지 디렉토리
+          strip_components: 1              # 디렉토리 구조에서 한 레벨 제거
+          overwrite: true                  # 기존 파일 덮어쓰기 허용
 
-      # 4. startup.sh 실행
+      # 3. 서버에서 애플리케이션 시작 스크립트 실행
       - name: Execute startup script
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@master  # SSH 연결 액션 사용
         with:
-          host: ${{ secrets.SSH_IP }}
-          username: ${{ secrets.SSH_ID }}
-          key: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.SSH_PORT }}
-          script: |
-            chmod +x ~/meeting-room/startup.sh
-            cd ~/meeting-room && ./startup.sh
+          host: ${{ secrets.SSH_IP }}      # 서버 IP
+          username: ${{ secrets.SSH_ID }}  # SSH 사용자명
+          key: ${{ secrets.SSH_KEY }}      # SSH 개인키
+          port: ${{ secrets.SSH_PORT }}    # SSH 포트
+          script: |                        # 서버에서 실행할 스크립트
+            chmod +x ~/chat-service/startup.sh    # startup.sh 파일에 실행 권한 부여
+            cd ~/chat-service && ./startup.sh     # chat-service 디렉토리로 이동 후 startup.sh 실행

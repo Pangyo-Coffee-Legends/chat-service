@@ -7,8 +7,10 @@ import com.nhnacademy.chatservice.member.domain.Member;
 import com.nhnacademy.chatservice.member.dto.MemberDto;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+//import com.nhnacademy.traceloggermodule.logging.FlowLogger;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/chat")
@@ -16,6 +18,7 @@ import java.util.List;
 public class ChatController {
 
     private final ChatService chatService;
+//    FlowLogger flowLogger = new FlowLogger();
 
     public ChatController(ChatService chatService) {
         this.chatService = chatService;
@@ -80,13 +83,11 @@ public class ChatController {
     // 내가 읽지 않은 메시지의 총 개수
     @GetMapping("/unread/count")
     public ResponseEntity<?> getUnreadCount(@RequestHeader("X-USER") String userEmail) {
+//        flowLogger.log("MqttSubscriberService#processMessage", Map.of(
+//                "sensorType", userEmail
+//        ));
+        System.out.println(userEmail + "테스트");
         return ResponseEntity.ok(chatService.getUnreadCount(userEmail));
-    }
-
-    // 내가 읽지 않은 알림 메시지의 총 개수
-    @GetMapping("/notification/unread/count")
-    public ResponseEntity<?> getNotificationUnreadCount(@RequestHeader("X-USER") String userEmail) {
-        return ResponseEntity.ok(chatService.getNotificationUnreadCount(userEmail));
     }
 
     // 채팅방 입장 시 채팅방에 존재하는 모든 사용자의 메시지 요소 중 하나인 unreadCount를 갱신
@@ -96,12 +97,20 @@ public class ChatController {
         return ResponseEntity.ok().build();
     }
 
+    // 내가 읽지 않은 알림 메시지의 총 개수
+    @GetMapping("/notification/unread/count")
+    public ResponseEntity<?> getNotificationUnreadCount(@RequestHeader("X-USER") String userEmail) {
+        return ResponseEntity.ok(chatService.getNotificationUnreadCount(userEmail));
+    }
+
+    // 알림 메시지 읽음 처리
     @GetMapping("/notification/read")
     public ResponseEntity<?> readNotification(@RequestHeader("X-USER") String userEmail) {
         chatService.readNotification(userEmail);
         return ResponseEntity.ok().build();
     }
 
+    // 알림 메시지 내역 불러오기
     @GetMapping("/notification/history")
     public ResponseEntity<?> getHistoryNotification(@RequestHeader("X-USER") String userEmail) {
         return ResponseEntity.ok(chatService.getHistoryNotification(userEmail));
