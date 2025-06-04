@@ -1,0 +1,73 @@
+# GitHub Actions 워크플로우의 이름 정의
+name: Chat-service CI/CD
+
+# 워크플로우가 실행될 조건 설정
+on:
+  push:
+    branches: [ "main" ]  # main 브랜치에 push될 때만 실행
+  pull_request:
+    branches: [ "main" ]
+
+# 실행할 작업들 정의
+jobs:
+  build:  # 작업 이름
+    runs-on: ubuntu-latest  # Ubuntu 최신 버전 가상머신에서 실행
+
+    # 작업 내 실행할 단계들
+    steps:
+      # GitHub 저장소에서 소스 코드를 체크아웃
+      - uses: actions/checkout@v4
+
+      # Java 개발 환경 설정
+      - name: Set up JDK 21
+        uses: actions/setup-java@v3  # Java 설정 액션 사용
+        with:
+          java-version: '21'         # Java 21 버전 사용
+          distribution: 'temurin'    # Eclipse Temurin 배포판 사용
+          cache: maven              # Maven 의존성 캐싱으로 빌드 속도 향상
+
+      # Maven을 사용하여 애플리케이션 빌드
+      - name: Build with Maven
+        run: mvn -B clean package --file pom.xml -DskipTests
+        # -B: 배치 모드 (비대화형)
+        # clean: 이전 빌드 결과물 삭제
+        # package: JAR 파일로 패키징
+        # --file pom.xml: pom.xml 파일 지정
+        # -DskipTests: 테스트 실행 건너뛰기
+
+      # 1. 배포 서버에 디렉토리 생성 및 기존 파일 정리
+      - name: Prepare server directory
+        uses: appleboy/ssh-action@master  # SSH 연결 액션 사용
+        with:
+          host: ${{ secrets.SSH_IP }}      # GitHub Secrets에서 서버 IP 가져오기
+          username: ${{ secrets.SSH_ID }}  # GitHub Secrets에서 SSH 사용자명 가져오기
+          key: ${{ secrets.SSH_KEY }}      # GitHub Secrets에서 SSH 개인키 가져오기
+          port: ${{ secrets.SSH_PORT }}    # GitHub Secrets에서 SSH 포트 가져오기
+          script: |                        # 서버에서 실행할 스크립트
+            mkdir -p ~/chat-service/target # chat-service/target 디렉토리 생성 (없으면)
+            rm -f ~/chat-service/target/*.jar  # 기존 JAR 파일들 삭제
+
+      # 2. 빌드된 JAR 파일을 서버로 업로드
+      - name: Upload JAR
+        uses: appleboy/scp-action@v0.1.7  # SCP 파일 전송 액션 사용
+        with:
+          host: ${{ secrets.SSH_IP }}      # 서버 IP
+          username: ${{ secrets.SSH_ID }}  # SSH 사용자명
+          key: ${{ secrets.SSH_KEY }}      # SSH 개인키
+          port: ${{ secrets.SSH_PORT }}    # SSH 포트
+          source: "target/*.jar"           # 업로드할 파일 (빌드된 JAR 파일)
+          target: "~/chat-service/target"  # 서버의 목적지 디렉토리
+          strip_components: 1              # 디렉토리 구조에서 한 레벨 제거
+          overwrite: true                  # 기존 파일 덮어쓰기 허용
+
+      # 3. 서버에서 애플리케이션 시작 스크립트 실행
+      - name: Execute startup script
+        uses: appleboy/ssh-action@master  # SSH 연결 액션 사용
+        with:
+          host: ${{ secrets.SSH_IP }}      # 서버 IP
+          username: ${{ secrets.SSH_ID }}  # SSH 사용자명
+          key: ${{ secrets.SSH_KEY }}      # SSH 개인키
+          port: ${{ secrets.SSH_PORT }}    # SSH 포트
+          script: |                        # 서버에서 실행할 스크립트
+            chmod +x ~/chat-service/startup.sh    # startup.sh 파일에 실행 권한 부여
+            cd ~/chat-service && ./startup.sh     # chat-service 디렉토리로 이동 후 startup.sh 실행
