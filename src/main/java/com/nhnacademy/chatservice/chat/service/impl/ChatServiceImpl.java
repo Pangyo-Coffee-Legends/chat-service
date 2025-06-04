@@ -6,10 +6,8 @@ import com.nhnacademy.chatservice.chat.dto.*;
 import com.nhnacademy.chatservice.chat.repository.*;
 import com.nhnacademy.chatservice.chat.service.ChatService;
 import com.nhnacademy.chatservice.member.domain.Member;
-import com.nhnacademy.chatservice.member.domain.Role;
 import com.nhnacademy.chatservice.member.dto.MemberDto;
 import com.nhnacademy.chatservice.member.repository.MemberRepository;
-import com.nhnacademy.chatservice.member.repository.RoleRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.stereotype.Service;
@@ -31,21 +29,17 @@ public class ChatServiceImpl implements ChatService {
     private final ChatMessageRepository chatMessageRepository;
     private final MessageReadStatusRepository readStatusRepository;
     private final MemberRepository memberRepository;
-    private final RoleRepository roleRepository;
-    private final NotificationMessageRepository notificationMessageRepository;
 
     private final ChatSessionTracker chatSessionTracker;
 
 
-    public ChatServiceImpl(SimpMessageSendingOperations messageTemplate, ChatRoomRepository chatRoomRepository, ChatParticipantRepository chatParticipantRepository, ChatMessageRepository chatMessageRepository, MessageReadStatusRepository readStatusRepository, MemberRepository memberRepository, RoleRepository roleRepository, NotificationMessageRepository notificationMessageRepository, ChatSessionTracker chatSessionTracker) {
+    public ChatServiceImpl(SimpMessageSendingOperations messageTemplate, ChatRoomRepository chatRoomRepository, ChatParticipantRepository chatParticipantRepository, ChatMessageRepository chatMessageRepository, MessageReadStatusRepository readStatusRepository, MemberRepository memberRepository, ChatSessionTracker chatSessionTracker) {
         this.messageTemplate = messageTemplate;
         this.chatRoomRepository = chatRoomRepository;
         this.chatParticipantRepository = chatParticipantRepository;
         this.chatMessageRepository = chatMessageRepository;
         this.readStatusRepository = readStatusRepository;
         this.memberRepository = memberRepository;
-        this.roleRepository = roleRepository;
-        this.notificationMessageRepository = notificationMessageRepository;
         this.chatSessionTracker = chatSessionTracker;
     }
 
@@ -461,83 +455,4 @@ public class ChatServiceImpl implements ChatService {
     }
 
     // 알림 메시지 API
-
-    @Override
-    public List<Member> findByRole_RoleName(String roleName) {
-        List<Member> roleMembers = memberRepository.findByRole_RoleName(roleName);
-
-        if(!roleMembers.isEmpty()) {
-            return roleMembers;
-        }
-
-        return List.of();
-    }
-
-    @Override
-    public Role findByRoleName(String roleName) {
-        Role role = roleRepository.findByRoleName("ROLE_ADMIN").orElseThrow(() -> new EntityNotFoundException("role cannot be found."));
-
-        return role;
-    }
-
-    @Override
-    public void saveNotificationMessage(Member member, Role role ,String content) {
-
-        NotificationMessage notificationMessage = NotificationMessage.builder()
-                .member(member)
-                .role(role)
-                .content(content)
-                .build();
-
-        NotificationMessage savedNotificationMessage = notificationMessageRepository.save(notificationMessage);
-
-        Long count = notificationMessageRepository.countByMemberAndIsReadFalse(member);
-
-        if(chatSessionTracker.getChatListSessionIdToUserEmailMap().containsValue(member.getMbEmail())) {
-            // 현재 접속중인 사용자에게만 notification count 및 content 메시지 보냄
-            messageTemplate.convertAndSend("/topic/unread-notification-count-updates/" + member.getMbEmail(), count);
-            messageTemplate.convertAndSend("/topic/" + member.getMbEmail(), content);
-            messageTemplate.convertAndSend("/topic/notification-message/" + member.getMbEmail(), content);
-        }
-    }
-
-    @Override
-    public Long getNotificationUnreadCount(String email) {
-        Member member = memberRepository.findByMbEmail(email).orElseThrow(() -> new EntityNotFoundException("member cannot be found."));
-
-        Long count = notificationMessageRepository.countByMemberAndIsReadFalse(member);
-
-        return count;
-    }
-
-    @Override
-    public void readNotification(String email) {
-        Member member = memberRepository.findByMbEmail(email).orElseThrow(() -> new EntityNotFoundException("member cannot be found."));
-
-        List<NotificationMessage> notificationMessages = notificationMessageRepository.findByMemberAndIsReadFalse(member);
-
-        for(NotificationMessage notificationMessage : notificationMessages) {
-            System.out.println("notificationMessage = " + notificationMessage);
-            notificationMessage.updateIsRead(true);
-        }
-    }
-
-    @Override
-    public List<NotificationMessageDto> getHistoryNotification(String email) {
-        Member member = memberRepository.findByMbEmail(email).orElseThrow(() -> new EntityNotFoundException("member cannot be found."));
-
-        List<NotificationMessage> notificationMessages = notificationMessageRepository.findByMember(member);
-
-        List<NotificationMessageDto> notificationMessageDtos = new ArrayList<>();
-
-        for(NotificationMessage notificationMessage : notificationMessages) {
-            NotificationMessageDto notificationMessageDto = NotificationMessageDto.builder()
-                    .content(notificationMessage.getContent())
-                    .createdAt(notificationMessage.getCreatedAt())
-                    .build();
-            notificationMessageDtos.add(notificationMessageDto);
-        }
-
-        return notificationMessageDtos;
-    }
 }

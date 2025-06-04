@@ -24,6 +24,4 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
             "(SELECT cp.member.id FROM ChatParticipant cp WHERE cp.chatRoom.id = :roomId)")
     List<Member> findMembersNotInChatRoom(@Param("roomId") Long roomId);
 
-    // Role의 roleName이 "ROLE_ADMIN"인 멤버 전체 조회
-    List<Member> findByRole_RoleName(String roleName);
 }

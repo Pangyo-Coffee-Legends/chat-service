@@ -97,22 +97,4 @@ public class ChatController {
         return ResponseEntity.ok().build();
     }
 
-    // 내가 읽지 않은 알림 메시지의 총 개수
-    @GetMapping("/notification/unread/count")
-    public ResponseEntity<?> getNotificationUnreadCount(@RequestHeader("X-USER") String userEmail) {
-        return ResponseEntity.ok(chatService.getNotificationUnreadCount(userEmail));
-    }
-
-    // 알림 메시지 읽음 처리
-    @GetMapping("/notification/read")
-    public ResponseEntity<?> readNotification(@RequestHeader("X-USER") String userEmail) {
-        chatService.readNotification(userEmail);
-        return ResponseEntity.ok().build();
-    }
-
-    // 알림 메시지 내역 불러오기
-    @GetMapping("/notification/history")
-    public ResponseEntity<?> getHistoryNotification(@RequestHeader("X-USER") String userEmail) {
-        return ResponseEntity.ok(chatService.getHistoryNotification(userEmail));
-    }
 }

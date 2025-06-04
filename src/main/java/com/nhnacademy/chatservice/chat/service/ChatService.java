@@ -2,11 +2,9 @@ package com.nhnacademy.chatservice.chat.service;
 
 import com.nhnacademy.chatservice.chat.domain.ChatMessage;
 import com.nhnacademy.chatservice.chat.domain.ChatRoom;
-import com.nhnacademy.chatservice.chat.domain.NotificationMessage;
 import com.nhnacademy.chatservice.chat.dto.ChatMessageDto;
 import com.nhnacademy.chatservice.chat.dto.ChatRoomListResDto;
 import com.nhnacademy.chatservice.chat.dto.EmailListRequestDto;
-import com.nhnacademy.chatservice.chat.dto.NotificationMessageDto;
 import com.nhnacademy.chatservice.member.domain.Member;
 import com.nhnacademy.chatservice.member.domain.Role;
 import com.nhnacademy.chatservice.member.dto.MemberDto;
@@ -43,16 +41,4 @@ public interface ChatService {
     Long getUnreadCount(String email);
 
     void sendUnreadCountUpdate(Long roomId);
-
-    List<Member> findByRole_RoleName(String roleName);
-
-    Role findByRoleName(String roleName);
-
-    void saveNotificationMessage(Member member, Role role ,String content);
-
-    Long getNotificationUnreadCount(String email);
-
-    void readNotification(String email);
-
-    List<NotificationMessageDto> getHistoryNotification(String email);
 }
